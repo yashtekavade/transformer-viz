@@ -1,6 +1,9 @@
 # Transformer Trace
 
 A step-by-step, click-into-the-math trace of one GPT-2 forward pass — built from scratch as a deeper, more interactive take on Transformer Explainer.
+
+<img width="625" height="249" alt="image" src="https://github.com/user-attachments/assets/f7ec97d0-dc28-44b8-b822-c60189cef29e" />
+
 <!-- Add a screenshot or short GIF of the page here, e.g.: --> <!-- ![Transformer Trace screenshot](docs/screenshot.png) -->
 [Live demo](https://transformer-vizz.vercel.app/).
 
@@ -74,9 +77,6 @@ Open `index_real.html`. The first run downloads GPT-2 small (~500 MB) from Huggi
 ## How the Two Data Modes Work
 Both make_sample_trace.py and extract_traces.py produce the same JSON schema — index.html doesn't know or care which one made the file it's showing. The synthetic generator hand-derives every stage so the math is internally consistent (scaling a dot_product value by √64 and softmaxing it really does produce the matching softmax value in the same file), even though the underlying weights are fabricated. extract_traces.py produces the identical shape, but every number comes from a real forward pass — including reconstructing the pre-softmax attention scores by replaying GPT-2's own attention math on a hook into c_attn, since HuggingFace only exposes the post-softmax result by default.
 - [x] Real trace extraction, shape tracker, click-to-trace, generation loop, guided walkthrough, and pipeline map.
-- [ ] Embedding-space nearest-neighbor explorer (cosine similarity over GPT-2's 50,257 × 768 table).
-- [ ] Save/share a specific run via URL.
-- [ ] "Classic vs. modern architecture" side-by-side: GPT-2 vs. Qwen2.5-0.5B (RoPE, RMSNorm, SwiGLU, GQA), as its own linked page.
 
 See [Changelog.md](Changelog.md) for what's shipped so far.
 
