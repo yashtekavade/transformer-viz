@@ -26,7 +26,11 @@
   .wrap{max-width:var(--measure); margin:0 auto;}
 
   .hero{padding:76px 0 56px;}
-  .hero-label{font-family:var(--mono); font-size:12px; color:var(--ink-faint); letter-spacing:.04em; margin-bottom:18px;}
+  .hero-top{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:18px;}
+  .hero-label{font-family:var(--mono); font-size:12px; color:var(--ink-faint); letter-spacing:.04em;}
+  .byline{display:flex; gap:16px; flex-wrap:wrap;}
+  .byline a{font-family:var(--mono); font-size:11.5px; color:var(--ink-faint); text-decoration:none; border-bottom:1px solid transparent; transition:color .15s, border-color .15s;}
+  .byline a:hover{color:var(--accent); border-color:var(--accent);}
   h1{font-size:52px; margin:0 0 20px; font-weight:600; letter-spacing:-0.02em; line-height:1.08; max-width:11ch;}
   .hero-sub{font-size:16px; color:var(--ink-dim); max-width:52ch; margin:0 0 32px; font-weight:400;}
   .prompt-line{font-family:var(--mono); font-size:13.5px; color:var(--ink); border-top:1px solid var(--hairline); padding-top:16px; max-width:640px;}
@@ -44,6 +48,15 @@
   p.bridge{color:var(--ink-dim); font-size:13.5px; max-width:62ch; margin:28px 0 0; padding-top:20px; border-top:1px dashed var(--hairline); line-height:1.7; font-style:italic;}
 
   .roadmap{display:flex; flex-direction:column; gap:10px; margin:24px 0 8px; max-width:62ch;}
+  .pmap-intro{font-size:13px; color:var(--ink-faint); margin:32px 0 14px;}
+  .pipeline-map{display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:0 0 8px;}
+  .pmap-node{font-family:var(--sans); font-size:12.5px; background:var(--surface); border:1px solid var(--hairline);
+    border-radius:4px; padding:9px 13px; cursor:pointer; text-align:left; transition:border-color .15s, background .15s; line-height:1.4;}
+  .pmap-node:hover{border-color:var(--accent); background:var(--accent-soft);}
+  .pmap-node .pmap-num{display:block; font-family:var(--mono); font-size:10px; color:var(--accent); margin-bottom:2px;}
+  .pmap-node .pmap-label{color:var(--ink); font-weight:500; white-space:nowrap;}
+  .pmap-arrow{color:var(--ink-faint); font-size:13px; padding:0 2px;}
+  .pmap-loop{font-family:var(--mono); font-size:10.5px; color:var(--ink-faint); font-style:italic; padding:0 4px; white-space:nowrap;}
   .roadmap-item{display:flex; gap:14px; align-items:baseline;}
   .roadmap-item .rm-num{font-family:var(--mono); font-size:12px; color:var(--accent); min-width:18px;}
   .roadmap-item .rm-text{font-size:14px; color:var(--ink-dim);}
@@ -175,7 +188,15 @@
 <div class="wrap">
 
   <div class="hero">
-    <div class="hero-label">forward pass trace</div>
+    <div class="hero-top">
+      <div class="hero-label">forward pass trace</div>
+      <div class="byline">
+        <a href="https://github.com/yashtekavade/transformer-viz" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://www.linkedin.com/in/yashtekavade/" target="_blank" rel="noopener">LinkedIn</a>
+        <a href="https://yashtekavade.substack.com/" target="_blank" rel="noopener">Substack</a>
+        <a href="https://yashtekavade.vercel.app/" target="_blank" rel="noopener">Portfolio</a>
+      </div>
+    </div>
     <h1>Transformer Trace</h1>
     <p class="hero-sub">A step-by-step walk through one GPT-2 forward pass — embedding, attention, and sampling, in that order.</p>
     <div class="prompt-line"><span class="k">prompt</span><span id="promptText"></span></div>
@@ -192,6 +213,22 @@
       <div class="roadmap-item"><span class="rm-num">03</span><span class="rm-text"><b>Output Probabilities</b> — turns the result into an actual ranked guess at the next word.</span></div>
     </div>
     <p class="prose dim">The model driving all of it is GPT-2 (small): 124 million parameters, nowhere near the largest model in use today, but architecturally close enough to GPT-4-class systems that everything below generalizes.</p>
+
+    <p class="pmap-intro">Or see the whole pipeline at a glance — click any stage to jump straight to it:</p>
+    <div class="pipeline-map" id="pipelineMap">
+      <button class="pmap-node" data-target="#embedSection"><span class="pmap-num">01</span><span class="pmap-label">Embedding</span></button>
+      <span class="pmap-arrow">→</span>
+      <button class="pmap-node" data-target="#attnHeading"><span class="pmap-num">2.1</span><span class="pmap-label">Query · Key · Value</span></button>
+      <span class="pmap-arrow">→</span>
+      <button class="pmap-node" data-target="#headsHeading"><span class="pmap-num">2.2</span><span class="pmap-label">Masked attention</span></button>
+      <span class="pmap-arrow">→</span>
+      <button class="pmap-node" data-target="#outConcatHeading"><span class="pmap-num">2.3</span><span class="pmap-label">Out &amp; concat</span></button>
+      <span class="pmap-arrow">→</span>
+      <button class="pmap-node" data-target=".mlp-line"><span class="pmap-num">2.4</span><span class="pmap-label">MLP</span></button>
+      <span class="pmap-loop">↻ ×12</span>
+      <span class="pmap-arrow">→</span>
+      <button class="pmap-node" data-target="#outputSection"><span class="pmap-num">03</span><span class="pmap-label">Probabilities</span></button>
+    </div>
   </section>
 
   <!-- ================= EMBEDDING ================= -->
@@ -239,7 +276,7 @@
 
     <!-- ---- 2.2 Heads + masked self-attention ---- -->
     <div class="sub-step">
-      <h3 class="sub-head"><span class="sub-num">2.2</span>Splitting into heads &amp; masked self-attention</h3>
+      <h3 class="sub-head" id="headsHeading"><span class="sub-num">2.2</span>Splitting into heads &amp; masked self-attention</h3>
       <p class="caption">Rather than run one large attention calculation, GPT-2 splits Q, K, and V into 12 smaller, independent heads of 64 dimensions each. Pick one to inspect:</p>
       <div class="head-strip" id="headStrip"></div>
 
@@ -265,7 +302,7 @@
 
     <!-- ---- 2.3 Output & concatenation ---- -->
     <div class="sub-step">
-      <h3 class="sub-head"><span class="sub-num">2.3</span>Attention output &amp; concatenation</h3>
+      <h3 class="sub-head" id="outConcatHeading"><span class="sub-num">2.3</span>Attention output &amp; concatenation</h3>
       <div class="kqv-flow">
         <div class="kqv-col value"><h5>Value</h5><div id="valueTokens"></div></div>
         <div class="kqv-arrow">→ × softmax weights →</div>
@@ -333,7 +370,14 @@
   </section>
 
   <footer>
-    Prototype v0.7 — data loaded from <code>sample_trace.json</code> (synthetic, hand-shaped to match real GPT-2 dimensions; every stage shown — dot-product/scale/softmax, the attention-output sum, the MLP expansion, and the logits projection — is internally consistent even though the underlying weights aren't real). Run <code>extract_traces.py</code> to replace it with a real forward pass. The highlighted head is illustrative, not a verified claim about real GPT-2.
+    Prototype v0.8 — data loaded from <code>sample_trace.json</code> (synthetic, hand-shaped to match real GPT-2 dimensions; every stage shown — dot-product/scale/softmax, the attention-output sum, the MLP expansion, and the logits projection — is internally consistent even though the underlying weights aren't real). Run <code>extract_traces.py</code> to replace it with a real forward pass. The highlighted head is illustrative, not a verified claim about real GPT-2.
+    <div class="byline" style="margin-top:16px;">
+      <span style="font-family:var(--mono); font-size:11.5px; color:var(--ink-faint);">Built by Yash Tekavade —</span>
+      <a href="https://github.com/yashtekavade/transformer-viz" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://www.linkedin.com/in/yashtekavade/" target="_blank" rel="noopener">LinkedIn</a>
+      <a href="https://yashtekavade.substack.com/" target="_blank" rel="noopener">Substack</a>
+      <a href="https://yashtekavade.vercel.app/" target="_blank" rel="noopener">Portfolio</a>
+    </div>
   </footer>
 </div>
 
@@ -636,6 +680,17 @@ renderHeadStrip();
 renderGrids();
 renderLogitsFormula();
 renderOutput();
+
+// ---------------- Pipeline overview map: click a stage, jump to it ----------------
+document.querySelectorAll('.pmap-node').forEach(btn=>{
+  btn.onclick = ()=>{
+    const target = document.querySelector(btn.dataset.target);
+    if (!target) return;
+    target.scrollIntoView({behavior:'smooth', block:'start'});
+    target.classList.add('guide-target');
+    setTimeout(()=>target.classList.remove('guide-target'), 1600);
+  };
+});
 
 // ---------------- Guided walkthrough ----------------
 const GUIDE_STEPS = [
