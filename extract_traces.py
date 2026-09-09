@@ -187,6 +187,26 @@ def extract_trace(prompt: str, tok, model):
     }
 
 
+def generate_chain(prompt: str, tok, model, n_steps=6, top_n=5):
+    """Real autoregressive generation, greedy, n_steps tokens — matching the
+    generation_chain schema the frontend's 'Watch it generate' panel expects.
+    Each step records the top-n candidates *before* the chosen token was
+    appended, so the panel can show what the model was actually weighing."""
+    input_ids = tok(prompt, return_tensors="pt")["input_ids"]
+    chain = []
+    for _ in range(n_steps):
+        with torch.no_grad():
+            out = model(input_ids)
+        logits = out.logits[0, -1]
+        probs = torch.softmax(logits, dim=-1)
+        top = torch.topk(probs, top_n)
+        candidates = [[tok.decode([idx.item()]), round(val.item(), 4)] for val, idx in zip(top.values, top.indices)]
+        next_id = top.indices[0].item()  # greedy
+        chain.append({"appended": tok.decode([next_id]), "candidates": candidates})
+        input_ids = torch.cat([input_ids, torch.tensor([[next_id]])], dim=1)
+    return chain
+
+
 def probe_induction_heads(tok, model, vocab_sample=2000, seq_len=25, n_trials=8, top_n=10):
     n_layer, n_head = model.config.n_layer, model.config.n_head
     scores = torch.zeros(n_layer, n_head)
@@ -216,6 +236,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--prompt", default="The rocket climbed through the clouds. The rocket climbed through")
     parser.add_argument("--probe-induction", action="store_true")
+    parser.add_argument("--generate-steps", type=int, default=6, help="how many tokens to generate for the 'Watch it generate' panel")
     parser.add_argument("--out", default="trace.json")
     args = parser.parse_args()
 
@@ -229,6 +250,9 @@ if __name__ == "__main__":
         print("Top induction-like heads:")
         for h in ranked[:10]:
             print(f"  layer {h['layer']:>2}  head {h['head']:>2}   score={h['score']}")
+
+    print(f"Generating {args.generate_steps} real tokens for the generation-loop panel...")
+    trace["generation_chain"] = generate_chain(args.prompt, tok, model, n_steps=args.generate_steps)
 
     with open(args.out, "w") as f:
         json.dump(trace, f)

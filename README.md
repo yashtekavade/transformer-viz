@@ -144,25 +144,9 @@ this actually happens with the real model once you run the probe.
 - [x] Live temperature / top-k / top-p resampling from real logits
 
 **Phase 2 — natural next steps**
-- [ ] Run `extract_traces.py` for real, replace the placeholder induction
+- [x] Run `extract_traces.py` for real, replace the placeholder induction
       head with a verified one
-- [ ] Embedding space explorer: nearest-neighbor search in GPT-2's
+- [x] Embedding space explorer: nearest-neighbor search in GPT-2's
       50,257 × 768 embedding matrix (cosine similarity, no training needed)
-- [ ] Save/share a specific run via URL (encode prompt + sampling params
+- [x] Save/share a specific run via URL (encode prompt + sampling params
       in the query string)
-
-**Phase 3 — the actually novel differentiator**
-- [ ] "Classic vs. Modern" architecture toggle: run the same prompt through
-      GPT-2 (learned positional embeddings, LayerNorm, GELU MLP, full
-      multi-head attention) side by side with a small modern open model
-      (e.g. Qwen2.5-0.5B or SmolLM2 — RoPE, RMSNorm, SwiGLU, grouped-query
-      attention) and visually diff the two pipelines. Nobody in this space
-      has built this yet, and it directly answers "wait, is this how GPT-4
-      actually works?" — which is the honest limitation of every GPT-2-based
-      explainer, including the original.
-
-**Phase 4 — polish, only if this becomes more than a personal prototype**
-- [ ] Mobile layout pass
-- [ ] Quantized/precomputed-trace fallback for slow devices (à la
-      AnimatedLLM) if you ever add live in-browser inference
-- [ ] Multilingual tokenization comparison
