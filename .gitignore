@@ -1,0 +1,12 @@
+# Local extraction outputs (regenerate with extract_traces.py + inject_trace.py)
+trace.json
+index_real.html
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+

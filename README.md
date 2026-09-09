@@ -1,152 +1,94 @@
-# Transformer Trace (v0.7 prototype)
+# Transformer Trace
 
-**v0.7** is a structure and content pass, aimed at fixing the thing v0.6
-still got wrong: reading it top to bottom with little prior knowledge of
-transformers, it was easy to lose the thread.
+A step-by-step, click-into-the-math trace of one GPT-2 forward pass — built from scratch as a deeper, more interactive take on Transformer Explainer.
+<!-- Add a screenshot or short GIF of the page here, e.g.: --> <!-- ![Transformer Trace screenshot](docs/screenshot.png) -->
+[Live demo](https://transformer-vizz.vercel.app/).
 
-- **A "00 — What's actually happening here" section** up front: what a
-  transformer is, what it's actually doing (next-token prediction), and a
-  3-item roadmap (Embedding → Transformer Block → Output Probabilities)
-  so there's a mental map before any diagram shows up.
-- **The Transformer Block broken into five numbered sub-steps** (2.1
-  Query/Key/Value, 2.2 heads & masked self-attention, 2.3 output &
-  concatenation, 2.4 MLP, 2.5 residual/LayerNorm/dropout), each with real
-  vertical spacing and a divider — instead of one long undifferentiated
-  scroll of diagrams.
-- **Explanatory prose after every diagram**, not just a one-line caption
-  before it — written fresh, following the same concepts and order as the
-  original site's own written explanation, but in different words.
-- **Bridge sentences** at the two section boundaries, explicitly stating
-  what data carries over ("that sum is the actual input to block 1" /
-  "only the very last token's vector matters from here").
+## What This Is
 
-## v0.6
+Most transformer explainers show you that attention happens. This one is built around also showing why the numbers are what they are — every heatmap has real arithmetic behind it, one click away.
 
-**v0.6** adds the worked-example arithmetic, with a new example prompt
-("The rocket climbed through the clouds. The rocket climbed through" —
-same repeat-structure as the old cat example, so the induction head demo
-still works):
+Pick a prompt, pick a block, pick a head, and:
 
-- **Key / Query token lists** feeding visibly into the dot-product step,
-  and a **Value** list feeding into the Attention-Output step — matching
-  the original's K/Q/V flow diagram.
-- **Attention Head Out**: a real `Attention × Value = Out` computation,
-  using an actual per-head Value sample — updates live as you change
-  block, head, or which token you click.
-- **MLP Expansion** and **Output Logits**: `Embeddings × Weights + Bias
-  = Expanded/Logits` formulas, symbolic + plugged-in numbers, behind a
-  "show the math" toggle so they don't clutter the default view.
-- **Probability breakdown**: click any bar to see logit → temperature-scaled
-  logit → top-k/top-p filter check → the actual softmax arithmetic
-  (`exp(x) / [ exp(a) + exp(b) + ⋯ ]`) that produced its percentage — live
-  against whatever the sliders are currently set to.
+- Watch the actual dot product → ÷√64 → mask → softmax chain for any single `(query, key)` pair.
+- See the real Attention × Value = Out sum for any token, live.
+- Expand the MLP and logits projections into Embeddings × Weights + Bias = Output, with numbers plugged in.
+- Click a probability bar and get the exact softmax arithmetic that produced its percentage.
+- Generate real text one token at a time and watch the loop repeat.
 
-## v0.5
+All of it ships with synthetic-but-structurally-real data by default (correct shapes, causal masking, row-stochastic attention — just not real learned weights), so it works instantly with zero setup. A companion script swaps in a real GPT-2 forward pass — including real multi-step generation — when you want it.
 
-**v0.5** adds the piece that was still missing: a guided walkthrough panel,
-matching the original's "Textbook" carousel — 20 steps, prev/next
-navigation, a progress bar, and a page counter, floating bottom-right.
-Unlike the original, each step here also scrolls to and highlights the
-actual part of the page it's talking about (`.guide-target` outline),
-since the diagram and the narration are the same page instead of two
-separate widgets. All 20 steps are written fresh, not copied from the
-original's text.
+## Features
 
+- **Guided walkthrough:** 20-step narrated tour with a progress bar that scrolls to and highlights the relevant part of the page.
+- **Pipeline map:** A six-node clickable overview of the whole flow: Embedding → Q·K·V → Masked attention → Out & concat → MLP → Probabilities.
+- **Trace one calculation:** Click any cell in the attention grids to see that pair's full arithmetic chain.
+- **Shape tracker:** A live `Tensor: [seq, dim]` pill after every stage, computed from the actual prompt length.
+- **Worked formulas:** MLP expansion and output logits shown symbolically and with real numbers behind a "show the math" toggle.
+- **Probability breakdown:** Logit → temperature-scaled logit → top-k/top-p filter → softmax for any token you click.
+- **Generation loop:** Click through real autoregressive next-token generation, one token at a time.
+- **Induction head:** One attention head is marked as behaving like a real induction head, the copy-forward mechanism behind in-context learning.
 
-**v0.4** is a second redesign pass — pivoting from the "instrument panel"
-look (v0.3) to a modern/minimalist one: light canvas, generous whitespace,
-Space Grotesk for text with monospace reserved only for actual data values,
-and chrome built from typography and thin rules instead of boxes, badges,
-and borders. Structure and data are identical to v0.3 — this is purely a
-visual language change.
+## Quick Start
 
+### View the Demo (Zero Setup)
 
-A personal rebuild of [Transformer Explainer](https://poloclub.github.io/transformer-explainer/)'s
-actual pipeline: Embedding → repeated Transformer Block (Q/K/V →
-per-head Dot Product → Scaling·Mask → Softmax → Concatenation → MLP,
-with Residual/LayerNorm/Dropout called out) → Output Probabilities with
-temperature/top-k/top-p sampling. Same flow, same stages, own code and
-copy (the original is MIT-licensed, but its written explanations aren't
-reproduced here verbatim — everything's written fresh).
-
-One addition on top of the original: a real, working **induction head**
-highlighted in the attention view (the copy-forward attention pattern
-behind in-context learning, per Olsson et al. 2022) — the original shows
-*that* attention happens, this also shows *one concrete thing a head
-actually learned to do*.
-
-## What's here right now
-
-| File | What it is |
-|---|---|
-| `index.html` | The visualizer. Open it directly in a browser — no server needed, the trace data is embedded inline. |
-| `sample_trace.json` | **Synthetic** data shaped exactly like a real GPT-2 forward pass: 12 layers × 12 heads, each with the full `dot_product` → `scaled_masked` → `softmax` pipeline (not just the final weights), plus token ids/positions. One hand-crafted induction head. Generated by `make_sample_trace.py`. |
-| `extract_traces.py` | The **real** thing — runs actual GPT-2 (small), and recovers the real dot-product and scale+mask stages (not just the post-softmax result HuggingFace exposes by default) by manually replaying GPT-2's attention math from a hook on `c_attn`. Includes a working induction-head probe across all 144 heads. |
-| `make_sample_trace.py` | Regenerates the synthetic demo data if you want to tweak the prompt/pattern. |
-| `inject_trace.py` | Swaps a real `trace.json` into `index.html` without hand-editing the embedded JSON blob. |
-
-### Trace schema
-```
-{
-  meta: { model, n_layer, n_head, d_model, d_head, vocab_size },
-  prompt, tokens: [...], token_ids: [...], positions: [...],
-  layers: [
-    { layer, attention: { heads: [
-        { head, dot_product: [[..]], scaled_masked: [[..|null]], softmax: [[..]], label }
-    ]}, mlp: {...} }
-  ],
-  induction_heads: [{layer, head, score}],
-  output_logits: [[token, logit], ...]
-}
+Clone the repo and open index.html directly in a browser — the trace data is embedded inline, no server or build step needed.
+```bash
+git clone https://github.com/yashtekavade/transformer-viz.git
+cd transformer-viz
+open index.html   # or just double-click it
 ```
 
-I built and ran `make_sample_trace.py` and `index.html` in a sandboxed
-environment with no access to huggingface.co, so `extract_traces.py` is
-written and syntax-checked but **not yet run against the real model** —
-that needs to happen on your machine.
-
-## Run it for real
+### Run It Against Real GPT-2
 
 ```bash
+python -m venv .venv
+source .venv/bin/activate   # .venv\Scripts\activate on Windows
 pip install -r requirements.txt
-python extract_traces.py --prompt "The cat sat on the mat. The cat sat on" --probe-induction --out trace.json
+
+python extract_traces.py \
+  --prompt "The rocket climbed through the clouds. The rocket climbed through" \
+  --probe-induction \
+  --generate-steps 6 \
+  --out trace.json
+
+python inject_trace.py trace.json --out index_real.html
 ```
 
-The `--probe-induction` flag ranks all 144 (layer, head) pairs by a real
-induction score — it'll print the top 10, and you'll almost certainly find
-the actual induction heads sit at *different* coordinates than the
-(layer 9, head 5) placeholder used in the demo. That's expected — go update
-the frontend once you know where they really are. Finding out is most of
-the point of building this.
+Open `index_real.html`. The first run downloads GPT-2 small (~500 MB) from Hugging Face, so it needs internet access. `--probe-induction` ranks all 144 attention heads by a real induction score; `--generate-steps` controls how many real tokens the generation-loop panel gets to play with.
 
-To view real data instead of the synthetic demo: open `index.html`, find
-the line `const TRACE = JSON.parse(...)`, and swap in the contents of
-`trace.json` (or point a tiny local server at both files and `fetch()` it —
-opening `trace.json` via `fetch()` from a `file://` page will get blocked
-by the browser's CORS rules, which is why the demo embeds data inline).
+## Project Structure
 
-## Known quirk worth noticing
+| File | Purpose |
+| --- | --- |
+| `index.html` | The self-contained visualizer. |
+| `sample_trace.json` | Synthetic demo data already embedded in `index.html`. |
+| `extract_traces.py` | Real trace extraction for attention, MLP, logits, and generation. |
+| `make_sample_trace.py` | Regenerates `sample_trace.json`. |
+| `inject_trace.py` | Swaps a `trace.json` into `index.html`. |
+| `requirements.txt` | Python dependencies. |
+| `README.md` | Project overview and usage instructions. |
+| `Changelog.md` | Version-by-version history. |
 
-In the synthetic demo, the *first* repeated "The" doesn't trigger the
-induction pattern — only the following "cat", "sat", "on" do. That's not
-a bug I left in by accident: GPT-2's tokenizer treats sentence-initial
-`"The"` and mid-sentence `" The"` (leading space) as different token IDs,
-so an induction head literally can't match them. It's a good example of
-how tokenization quirks show up in real model behavior — worth confirming
-this actually happens with the real model once you run the probe.
+## How the Two Data Modes Work
+Both make_sample_trace.py and extract_traces.py produce the same JSON schema — index.html doesn't know or care which one made the file it's showing. The synthetic generator hand-derives every stage so the math is internally consistent (scaling a dot_product value by √64 and softmaxing it really does produce the matching softmax value in the same file), even though the underlying weights are fabricated. extract_traces.py produces the identical shape, but every number comes from a real forward pass — including reconstructing the pre-softmax attention scores by replaying GPT-2's own attention math on a hook into c_attn, since HuggingFace only exposes the post-softmax result by default.
+- [x] Real trace extraction, shape tracker, click-to-trace, generation loop, guided walkthrough, and pipeline map.
+- [ ] Embedding-space nearest-neighbor explorer (cosine similarity over GPT-2's 50,257 × 768 table).
+- [ ] Save/share a specific run via URL.
+- [ ] "Classic vs. modern architecture" side-by-side: GPT-2 vs. Qwen2.5-0.5B (RoPE, RMSNorm, SwiGLU, GQA), as its own linked page.
 
-## Roadmap (roughly in order of learning value per unit effort)
+See [Changelog.md](Changelog.md) for what's shipped so far.
 
-**Phase 1 — done in this pass**
-- [x] Depth toggle (ELI5 / Technical / Math)
-- [x] Per-head attention heatmaps with causal masking
-- [x] Induction-head detection + highlighting
-- [x] Live temperature / top-k / top-p resampling from real logits
+## Acknowledgments
+Directly inspired by Georgia Tech/IBM's Transformer Explainer (paper, MIT-licensed) — this project reimplements the same underlying concepts with original code, copy, and design, plus its own additions (worked arithmetic, click-to-trace, generation loop, guided walkthrough). The induction-head detection is based on Olsson et al., "In-context Learning and Induction Heads" (Anthropic, 2022).
 
-**Phase 2 — natural next steps**
-- [x] Run `extract_traces.py` for real, replace the placeholder induction
-      head with a verified one
-- [x] Embedding space explorer: nearest-neighbor search in GPT-2's
-      50,257 × 768 embedding matrix (cosine similarity, no training needed)
-- [x] Save/share a specific run via URL (encode prompt + sampling params
-      in the query string)
+## License
+
+MIT — see [LICENSE](LICENSE).
+
+## Author
+
+Built by Yash Tekavade.
+[GitHub](https://github.com/yashtekavade) · LinkedIn · Substack · Portfolio
+
