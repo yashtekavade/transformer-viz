@@ -1,4 +1,26 @@
-# Transformer Trace (v0.6 prototype)
+# Transformer Trace (v0.7 prototype)
+
+**v0.7** is a structure and content pass, aimed at fixing the thing v0.6
+still got wrong: reading it top to bottom with little prior knowledge of
+transformers, it was easy to lose the thread.
+
+- **A "00 — What's actually happening here" section** up front: what a
+  transformer is, what it's actually doing (next-token prediction), and a
+  3-item roadmap (Embedding → Transformer Block → Output Probabilities)
+  so there's a mental map before any diagram shows up.
+- **The Transformer Block broken into five numbered sub-steps** (2.1
+  Query/Key/Value, 2.2 heads & masked self-attention, 2.3 output &
+  concatenation, 2.4 MLP, 2.5 residual/LayerNorm/dropout), each with real
+  vertical spacing and a divider — instead of one long undifferentiated
+  scroll of diagrams.
+- **Explanatory prose after every diagram**, not just a one-line caption
+  before it — written fresh, following the same concepts and order as the
+  original site's own written explanation, but in different words.
+- **Bridge sentences** at the two section boundaries, explicitly stating
+  what data carries over ("that sum is the actual input to block 1" /
+  "only the very last token's vector matters from here").
+
+## v0.6
 
 **v0.6** adds the worked-example arithmetic, with a new example prompt
 ("The rocket climbed through the clouds. The rocket climbed through" —

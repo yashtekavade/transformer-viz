@@ -39,7 +39,23 @@
   h2{font-size:24px; margin:0; font-weight:600; letter-spacing:-0.01em;}
   .loop-note{font-size:13px; color:var(--ink-faint); font-style:italic;}
   .caption{color:var(--ink-dim); font-size:15px; max-width:62ch; margin:0 0 32px; line-height:1.65;}
+  p.prose{color:var(--ink); font-size:14.5px; max-width:66ch; margin:16px 0; line-height:1.75;}
+  p.prose.dim{color:var(--ink-dim);}
+  p.bridge{color:var(--ink-dim); font-size:13.5px; max-width:62ch; margin:28px 0 0; padding-top:20px; border-top:1px dashed var(--hairline); line-height:1.7; font-style:italic;}
+
+  .roadmap{display:flex; flex-direction:column; gap:10px; margin:24px 0 8px; max-width:62ch;}
+  .roadmap-item{display:flex; gap:14px; align-items:baseline;}
+  .roadmap-item .rm-num{font-family:var(--mono); font-size:12px; color:var(--accent); min-width:18px;}
+  .roadmap-item .rm-text{font-size:14px; color:var(--ink-dim);}
+  .roadmap-item .rm-text b{color:var(--ink); font-weight:600;}
+
   h3.sub-head{font-size:14px; font-weight:600; margin:40px 0 6px; letter-spacing:.01em;}
+  .sub-step{margin-top:64px; padding-top:36px; border-top:1px solid var(--hairline-soft);}
+  .sub-step:first-of-type{margin-top:36px; padding-top:0; border-top:none;}
+  .sub-step h3.sub-head{margin-top:0; font-size:15px;}
+  .sub-num{font-family:var(--mono); color:var(--accent); margin-right:8px; font-weight:500;}
+  h4.mini-head{font-size:12.5px; font-weight:600; color:var(--ink-dim); margin:30px 0 8px;}
+
   .anno-line{font-family:var(--mono); font-size:12px; color:var(--ink-faint); margin:0 0 28px;}
   .anno-line b{color:var(--ink-dim); font-weight:500;}
 
@@ -165,11 +181,30 @@
     <div class="prompt-line"><span class="k">prompt</span><span id="promptText"></span></div>
   </div>
 
+  <!-- ================= OVERVIEW ================= -->
+  <section id="overviewSection">
+    <div class="sec-head"><span class="sec-num">00</span><h2>What's actually happening here</h2></div>
+    <p class="prose">Transformers are the architecture behind almost every major AI system released since 2017 — GPT, Llama, Gemini, and most of what's followed all sit on some variant of the design introduced in the paper "Attention Is All You Need." The same core idea shows up outside text too, in image and audio models, protein-folding systems, even game-playing agents — but this page sticks to the text case, since it's the easiest one to watch happen step by step.</p>
+    <p class="prose">A text transformer really only does one thing: given everything typed so far, guess the single most likely next token. Write a whole paragraph, and you're just watching that guess get made over and over, with each new token fed back in as extra input for the next guess. Self-attention is the mechanism that lets each guess weigh which of the earlier words actually matter.</p>
+    <div class="roadmap">
+      <div class="roadmap-item"><span class="rm-num">01</span><span class="rm-text"><b>Embedding</b> — turns the prompt into numbers the model can do math on.</span></div>
+      <div class="roadmap-item"><span class="rm-num">02</span><span class="rm-text"><b>Transformer Block</b>, repeated 12× — mixes information between tokens, then refines each one on its own.</span></div>
+      <div class="roadmap-item"><span class="rm-num">03</span><span class="rm-text"><b>Output Probabilities</b> — turns the result into an actual ranked guess at the next word.</span></div>
+    </div>
+    <p class="prose dim">The model driving all of it is GPT-2 (small): 124 million parameters, nowhere near the largest model in use today, but architecturally close enough to GPT-4-class systems that everything below generalizes.</p>
+  </section>
+
   <!-- ================= EMBEDDING ================= -->
   <section id="embedSection">
     <div class="sec-head"><span class="sec-num">01</span><h2>Embedding</h2></div>
     <p class="caption">Each token is looked up in a 50,257 × 768 table, then summed with a positional vector so the model knows word order. That sum is what enters the first transformer block.</p>
     <div class="token-row" id="tokenRow"></div>
+
+    <p class="prose">Turning text into something a model can do math on takes four steps. First, <b>tokenization</b> splits the prompt into pieces — usually a whole word for common terms, and smaller subword chunks for longer or rarer ones. GPT-2 has 50,257 of these pieces in its vocabulary, each with its own numeric ID, visible above each token.</p>
+    <p class="prose">Second, every ID gets looked up in a <b>token embedding</b> table: a matrix of 50,257 rows by 768 columns, roughly 39 million learned numbers in total. Tokens that tend to appear in similar contexts end up near each other in this 768-dimensional space — part of what lets the model treat related words as related without being told so explicitly.</p>
+    <p class="prose">Third, since the embedding table alone has no sense of order, GPT-2 adds a <b>positional</b> vector for each slot in the sequence — position 0 gets one learned vector, position 1 another, and so on, entirely separate from what token happens to sit there.</p>
+    <p class="prose">Finally, the token vector and position vector for each slot are added together. That sum — not the token embedding alone — is the actual input to block 1.</p>
+    <p class="bridge">That's the last thing that happens before block 1. Everything from here on is the transformer block — the same block, repeated 12 times.</p>
   </section>
 
   <!-- ================= TRANSFORMER BLOCK ================= -->
@@ -177,71 +212,93 @@
     <div class="sec-head">
       <span class="sec-num">02</span><h2>Transformer Block</h2><span class="loop-note">repeated 12×, each with its own weights</span>
     </div>
+    <p class="prose">A block does two things to every token's vector, always in the same order: attention lets it borrow information from other tokens, and an MLP then refines it independently. GPT-2 (small) stacks 12 of these, each with its own separately learned weights — the output of one block becomes the input to the next. Drag the slider below to jump between any of the 12; everything under it describes what a single block actually does.</p>
     <div class="layer-row">
       <label>block</label>
       <input type="range" id="layerSlider" min="0" max="11" value="9">
       <span class="layer-val" id="layerBadge">10 / 12</span>
     </div>
-
     <div class="anno-line" id="annoLine"><b>LayerNorm</b> → Attention → <b>+ Residual</b> → <b>LayerNorm</b> → MLP → <b>+ Residual</b>  <span style="opacity:.6">(Dropout, training only)</span></div>
 
-    <h3 class="sub-head" id="attnHeading">Multi-head self-attention</h3>
-    <p class="caption">Every token's embedding is projected three separate ways using learned weight matrices, then split into 12 heads of 64 dimensions each — so the model can track several kinds of relationships at once. Pick a head to inspect:</p>
-    <div class="qkv-row">
-      <div class="qkv-item q"><b>Query</b><span>what am I looking for?</span></div>
-      <div class="qkv-item k"><b>Key</b><span>what do I contain?</span></div>
-      <div class="qkv-item v"><b>Value</b><span>what do I pass on?</span></div>
-    </div>
-
-    <div class="kqv-flow">
-      <div class="kqv-col key"><h5>Key</h5><div id="keyTokens"></div></div>
-      <div class="kqv-col query"><h5>Query</h5><div id="queryTokens"></div></div>
-      <div class="kqv-arrow">→ dot product →</div>
-    </div>
-
-    <div class="head-strip" id="headStrip"></div>
-
-    <div class="stages-row">
-      <div class="stage-col">
-        <h4><span class="stage-col-n">1</span>Dot product</h4>
-        <div class="grid-wrap" id="gridDot"></div>
-        <p class="note">Qᵢ · Kⱼᵀ for every pair. Faded cells look at the future and get discarded next.</p>
+    <!-- ---- 2.1 QKV ---- -->
+    <div class="sub-step">
+      <h3 class="sub-head" id="attnHeading"><span class="sub-num">2.1</span>Query, Key, Value</h3>
+      <p class="caption">Every token's embedding is projected three separate ways, using three separately learned weight matrices:</p>
+      <div class="qkv-row">
+        <div class="qkv-item q"><b>Query</b><span>what am I looking for?</span></div>
+        <div class="qkv-item k"><b>Key</b><span>what do I contain?</span></div>
+        <div class="qkv-item v"><b>Value</b><span>what do I pass on?</span></div>
       </div>
-      <div class="stage-col">
-        <h4><span class="stage-col-n">2</span>Scaling · mask</h4>
-        <div class="grid-wrap" id="gridScaled"></div>
-        <p class="note">Divided by √64; future positions are blocked so the model can't peek ahead.</p>
+      <div class="kqv-flow">
+        <div class="kqv-col key"><h5>Key</h5><div id="keyTokens"></div></div>
+        <div class="kqv-col query"><h5>Query</h5><div id="queryTokens"></div></div>
+        <div class="kqv-arrow">→ dot product →</div>
       </div>
-      <div class="stage-col">
-        <h4><span class="stage-col-n">3</span>Softmax</h4>
-        <div class="grid-wrap" id="gridSoftmax"></div>
-        <p class="note">Each row sums to 1 — the model's actual attention distribution.</p>
+      <p class="prose">A search-engine analogy makes the three roles easier to hold onto. Query is the term you type into the search bar — what you're trying to find. Key is the title of each result — what a token has to offer as a match. Value is the actual page content you get back once a Query and a Key are judged a good match. The Key and Query lists above are exactly what feed into the next step.</p>
+    </div>
+
+    <!-- ---- 2.2 Heads + masked self-attention ---- -->
+    <div class="sub-step">
+      <h3 class="sub-head"><span class="sub-num">2.2</span>Splitting into heads &amp; masked self-attention</h3>
+      <p class="caption">Rather than run one large attention calculation, GPT-2 splits Q, K, and V into 12 smaller, independent heads of 64 dimensions each. Pick one to inspect:</p>
+      <div class="head-strip" id="headStrip"></div>
+
+      <div class="stages-row">
+        <div class="stage-col">
+          <h4><span class="stage-col-n">1</span>Dot product</h4>
+          <div class="grid-wrap" id="gridDot"></div>
+          <p class="note">Qᵢ · Kⱼᵀ for every pair. Faded cells look at the future and get discarded next.</p>
+        </div>
+        <div class="stage-col">
+          <h4><span class="stage-col-n">2</span>Scaling · mask</h4>
+          <div class="grid-wrap" id="gridScaled"></div>
+          <p class="note">Divided by √64; future positions are blocked so the model can't peek ahead.</p>
+        </div>
+        <div class="stage-col">
+          <h4><span class="stage-col-n">3</span>Softmax</h4>
+          <div class="grid-wrap" id="gridSoftmax"></div>
+          <p class="note">Each row sums to 1 — the model's actual attention distribution.</p>
+        </div>
       </div>
+      <p class="prose">Splitting into heads lets different heads specialize — one might end up tracking nearby grammar, another long-range topic consistency — without either being forced to share capacity with the other. Within a single head, the three grids above are the whole calculation: <b>dot product</b> multiplies every token's Query against every other token's Key, producing a raw relevance score for each pair. <b>Scaling</b> divides those scores down (by the square root of 64, the head's dimension) to keep the numbers in a range that trains stably, and <b>masking</b> overwrites every score that looks at a future token with negative infinity — the model is only ever allowed to use what came before. <b>Softmax</b> then turns each row into an actual probability distribution summing to 1: the model's real, final answer to "how much should this token attend to each earlier token."</p>
     </div>
 
-    <div class="kqv-flow" style="margin-top:28px;">
-      <div class="kqv-col value"><h5>Value</h5><div id="valueTokens"></div></div>
-      <div class="kqv-arrow">→ × softmax weights →</div>
+    <!-- ---- 2.3 Output & concatenation ---- -->
+    <div class="sub-step">
+      <h3 class="sub-head"><span class="sub-num">2.3</span>Attention output &amp; concatenation</h3>
+      <div class="kqv-flow">
+        <div class="kqv-col value"><h5>Value</h5><div id="valueTokens"></div></div>
+        <div class="kqv-arrow">→ × softmax weights →</div>
+      </div>
+      <h4 class="mini-head">Attention Head <span id="outHeadNum"></span> Out</h4>
+      <p class="caption">The softmax row for token <span id="outTokenLabel"></span> is multiplied against this head's Value vectors and summed — shown here for one of its 64 dimensions:</p>
+      <div class="formula-block" id="attnOutFormula"></div>
+      <div class="concat-row">
+        <span id="concatHeads"></span>
+        <span class="concat-arrow">concat →</span>
+        <span class="concat-out">768</span>
+      </div>
+      <p class="prose">Once a head knows how much attention to pay to each earlier token, it uses those exact weights to take a weighted mix of the Value vectors — that's the formula worked out above. Do that for all 64 dimensions and all 12 heads, then concatenate the 12 results back into a single 768-dimensional vector per token, followed by one more linear projection. That projected vector is this block's attention contribution.</p>
     </div>
 
-    <h3 class="sub-head">Attention Head <span id="outHeadNum"></span> Out</h3>
-    <p class="caption">The softmax row for token <span id="outTokenLabel"></span> is multiplied against this head's Value vectors and summed — the actual arithmetic behind "attention output," shown here for one of its 64 dimensions.</p>
-    <div class="formula-block" id="attnOutFormula"></div>
-
-    <h3 class="sub-head">Attention Output &amp; Concatenation</h3>
-    <div class="concat-row">
-      <span id="concatHeads"></span>
-      <span class="concat-arrow">concat →</span>
-      <span class="concat-out">768</span>
+    <!-- ---- 2.4 MLP ---- -->
+    <div class="sub-step">
+      <h3 class="sub-head"><span class="sub-num">2.4</span>MLP</h3>
+      <p class="caption">Expanded, passed through a nonlinearity, then compressed back — refining each token independently of the others:</p>
+      <div class="mlp-line">768 <span class="op">→</span> <span class="expand" id="mlpExpand">3072</span> <span class="op">GELU→</span> 768</div>
+      <div class="mlp-stats" id="mlpStats"></div>
+      <button class="math-toggle" id="mlpMathToggle">show the math</button>
+      <div class="formula-block hidden" id="mlpFormula"></div>
+      <p class="prose">Where attention moves information <i>between</i> tokens, the MLP works on each token entirely on its own. It expands the 768-dimensional vector to 3,072 dimensions, applies a GELU nonlinearity, then compresses it back down to 768. The four-fold expansion gives the model temporary extra room to represent more complex patterns before squeezing back down — this is also where a large share of a model's factual and pattern knowledge is thought to actually live.</p>
     </div>
-    <p class="caption" style="margin-top:8px;">All 12 heads' outputs are concatenated back into one 768-dim vector per token, then passed through one more linear projection.</p>
 
-    <h3 class="sub-head">MLP</h3>
-    <p class="caption">Expanded, passed through a nonlinearity, then compressed back — refining each token independently of the others.</p>
-    <div class="mlp-line">768 <span class="op">→</span> <span class="expand" id="mlpExpand">3072</span> <span class="op">GELU→</span> 768</div>
-    <div class="mlp-stats" id="mlpStats"></div>
-    <button class="math-toggle" id="mlpMathToggle">show the math</button>
-    <div class="formula-block hidden" id="mlpFormula"></div>
+    <!-- ---- 2.5 Residual / LayerNorm / Dropout ---- -->
+    <div class="sub-step" id="auxSection">
+      <h3 class="sub-head"><span class="sub-num">2.5</span>Residual connections, LayerNorm &amp; Dropout</h3>
+      <p class="prose">Three supporting mechanisms are what actually make a 12-block-deep stack trainable. A <b>residual connection</b> adds a layer's input back onto its own output rather than replacing it outright — GPT-2 does this once around attention and once around the MLP (see the diagram near the top of this section), which is what keeps gradients flowing cleanly all the way back through a deep stack. <b>Layer Normalization</b> rescales each token's vector to a consistent range right before attention and right before the MLP, which in practice makes training far more stable. <b>Dropout</b> randomly zeroes out a fraction of activations, but only during training, to stop the model over-relying on any single connection — it has zero effect on anything shown on this page, since this is inference, not training.</p>
+    </div>
+
+    <p class="bridge">After 12 blocks, every token carries a representation built up from everything before it. Only the very last token's vector matters from here — it's what gets turned into an actual next-word guess.</p>
   </section>
 
   <!-- ================= OUTPUT ================= -->
@@ -250,6 +307,7 @@
     <p class="caption">After 12 blocks, the final token's vector is projected onto all 50,257 vocabulary entries, turned into probabilities with softmax, then sampled using temperature, top-k, and top-p.</p>
     <button class="math-toggle" id="logitsMathToggle">show the math for the logits</button>
     <div class="formula-block hidden" id="logitsFormula"></div>
+    <p class="prose">The last block's output for the final token is projected one more time, through a linear layer mapping its 768 dimensions onto all 50,257 vocabulary entries — one raw score, called a <b>logit</b>, per possible next token. A bigger logit means the model thinks that token is more likely, but a logit by itself isn't a probability yet.</p>
 
     <div class="controls">
       <div class="control" id="tempControl">
@@ -267,14 +325,15 @@
     </div>
     <div class="bars" id="bars"></div>
     <div class="predicted" id="predicted"></div>
+    <p class="prose">Softmax converts the full set of logits into an actual probability distribution — every value between 0 and 1, all summing to exactly 1. The bars above are the highest-ranked candidates under that distribution for this exact prompt. Three settings then shape which token actually gets picked: <b>temperature</b> divides every logit before softmax runs — below 1 it sharpens the distribution toward the model's top pick, above 1 it flattens things out and lets less-likely tokens compete. <b>Top-k</b> throws away every candidate outside the k highest-probability tokens. <b>Top-p</b> instead keeps the smallest group of tokens whose probabilities add up to at least p, discarding the long tail.</p>
 
-    <h3 class="sub-head">Probability breakdown</h3>
+    <h3 class="sub-head" style="margin-top:56px;">Probability breakdown</h3>
     <p class="caption">Click a token above to see exactly how its probability was computed at the current settings.</p>
     <div id="breakdownPanel"></div>
   </section>
 
   <footer>
-    Prototype v0.6 — data loaded from <code>sample_trace.json</code> (synthetic, hand-shaped to match real GPT-2 dimensions; every stage shown — dot-product/scale/softmax, the attention-output sum, the MLP expansion, and the logits projection — is internally consistent even though the underlying weights aren't real). Run <code>extract_traces.py</code> to replace it with a real forward pass. The highlighted head is illustrative, not a verified claim about real GPT-2.
+    Prototype v0.7 — data loaded from <code>sample_trace.json</code> (synthetic, hand-shaped to match real GPT-2 dimensions; every stage shown — dot-product/scale/softmax, the attention-output sum, the MLP expansion, and the logits projection — is internally consistent even though the underlying weights aren't real). Run <code>extract_traces.py</code> to replace it with a real forward pass. The highlighted head is illustrative, not a verified claim about real GPT-2.
   </footer>
 </div>
 
@@ -582,9 +641,9 @@ renderOutput();
 const GUIDE_STEPS = [
   { title: "What this is", target: ".hero",
     body: "This is a live trace of one GPT-2 (small) forward pass — the same architecture behind GPT-style models, just small enough to inspect end to end. Everything below is one real computation, split into three stages: embedding, a repeated transformer block, and output sampling." },
-  { title: "Next-token prediction", target: ".prompt-line",
+  { title: "Next-token prediction", target: "#overviewSection",
     body: "A transformer generates text one token at a time by asking a single question: given everything so far, what's the most likely next token? Generating a sentence is just this question asked repeatedly, feeding each answer back in as new input." },
-  { title: "Three moving parts", target: null,
+  { title: "Three moving parts", target: ".roadmap",
     body: "Every generative transformer breaks into three pieces: embedding turns text into numbers, a stack of transformer blocks refines those numbers with attention and an MLP, and an output layer turns the result back into a probability over the vocabulary. Steps 4 onward walk through each in order." },
   { title: "Embedding, conceptually", target: "#embedSection .sec-head",
     body: "Before any attention happens, each token has to become a vector the model can do math on. That takes two ingredients — what the token means, and where it sits in the sequence — added together." },
@@ -614,11 +673,11 @@ const GUIDE_STEPS = [
     body: "Temperature divides the logits before softmax. Below 1, it sharpens the distribution toward the top choice; above 1, it flattens it, giving longer-shot tokens a real chance." },
   { title: "Top-k / top-p sampling", target: "#topkControl",
     body: "Rather than always taking the single most likely token, top-k restricts sampling to the k best candidates, and top-p keeps the smallest set of tokens whose probabilities add up to at least p." },
-  { title: "Residual connections", target: "#annoLine",
+  { title: "Residual connections", target: "#auxSection",
     body: "Each block adds its own input back onto its output — once around attention, once around the MLP — instead of replacing it outright. That shortcut is what makes stacking 12 (or, in bigger models, 100+) blocks practical to train." },
-  { title: "Layer Normalization", target: "#annoLine",
+  { title: "Layer Normalization", target: "#auxSection",
     body: "Before attention and before the MLP, GPT-2 rescales each token's vector so its values sit in a consistent range. Unglamorous, but deep stacks train far more reliably with it than without." },
-  { title: "Dropout", target: "#annoLine",
+  { title: "Dropout", target: "#auxSection",
     body: "During training, dropout randomly zeroes out a fraction of activations so the model can't over-rely on any one connection. It's switched off during inference — which is what's happening on this page — so it has no effect on anything you're seeing." },
 ];
 
